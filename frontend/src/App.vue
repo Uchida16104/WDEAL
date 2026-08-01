@@ -127,6 +127,8 @@ import ModePills from './components/ModePills'
 import { mountChart } from './lib/charts'
 import type { AnalysisPayload } from './lib/types'
 
+const API_URL = import.meta.env.VITE_API_URL
+VITE_API_URL = https://wdeal.onrender.com
 const sqlText = ref(`SELECT * FROM input_data`)
 const csvText = ref(`name,department,score,city
 Aki,Sales,91,Tokyo
