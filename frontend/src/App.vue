@@ -31,7 +31,7 @@
         <form
           id="wdeal-form"
           class="space-y-4"
-          hx-post="/api/analyze"
+          hx-post="`${API_URL}/api/analyze`"
           hx-trigger="load, input changed delay:450ms from:textarea, change from:select, change from:input[type='checkbox']"
           hx-target="#analysis-panel"
           hx-swap="innerHTML"
@@ -198,7 +198,7 @@ function buildFormData(): FormData {
 }
 
 async function download(kind: 'csv' | 'xlsx' | 'xlsm') {
-  const response = await fetch(`/api/export/${kind}`, {
+  const response = await fetch(`${API_URL}/api/export/${kind}`, {
     method: 'POST',
     body: buildFormData(),
   })
