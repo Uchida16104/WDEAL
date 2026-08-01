@@ -1,0 +1,121 @@
+<div id="analysis-panel-inner" x-data="{ open: false }">
+  <script type="application/json" id="wdeal-analysis-json">{{ analysis_json | safe }}</script>
+
+  <div class="summary-grid grid" style="margin-bottom:16px">
+    <div class="card metric"><h3>Rows</h3><p>{{ analysis.summary.rows }}</p></div>
+    <div class="card metric"><h3>Columns</h3><p>{{ analysis.summary.columns }}</p></div>
+    <div class="card metric"><h3>Missing</h3><p>{{ analysis.summary.missing_cells }}</p></div>
+    <div class="card metric"><h3>Dup rows</h3><p>{{ analysis.summary.duplicate_rows }}</p></div>
+    <div class="card metric"><h3>SQL tokens</h3><p>{{ analysis.sql.token_count }}</p></div>
+  </div>
+
+  {% if analysis.errors %}
+  <div class="error" style="margin-bottom:16px">
+    <strong>Diagnostics</strong>
+    <ul style="margin:8px 0 0 18px">
+      {% for error in analysis.errors %}
+      <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="card" style="padding:16px;margin-bottom:16px">
+    <div class="row" style="justify-content:space-between">
+      <h3 style="margin:0">Chart preview</h3>
+      <div class="row">
+        <span class="badge">{{ analysis.chart_mode }}</span>
+        <span class="badge">{{ analysis.chart.dataset_label }}</span>
+      </div>
+    </div>
+    <div style="height:320px;margin-top:12px">
+      <canvas id="wdeal-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="card" style="padding:16px;margin-bottom:16px">
+    <div class="row" style="justify-content:space-between">
+      <h3 style="margin:0">Columns</h3>
+      <button type="button" class="secondary" @click="open = !open">Toggle details</button>
+    </div>
+    <div x-show="open" x-transition style="margin-top:12px;overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Column</th>
+            <th>Dtype</th>
+            <th>Non-null</th>
+            <th>Missing</th>
+            <th>Unique</th>
+            <th>Null ratio</th>
+            <th>Sample</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for col in analysis.columns %}
+          <tr>
+            <td>{{ col.name }}</td>
+            <td>{{ col.dtype }}</td>
+            <td>{{ col.non_null }}</td>
+            <td>{{ col.missing }}</td>
+            <td>{{ col.unique }}</td>
+            <td>{{ col.null_ratio }}</td>
+            <td>{{ col.sample }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if not analysis.columns %}
+      <div class="muted" style="margin-top:12px">No columns detected.</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="padding:16px;margin-bottom:16px">
+    <h3 style="margin:0 0 12px">Preview rows</h3>
+    <div style="overflow:auto;max-height:360px">
+      <table>
+        <thead>
+          <tr>
+            {% for name in analysis.preview_columns %}
+            <th>{{ name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in analysis.preview_rows %}
+          <tr>
+            {% for name in analysis.preview_columns %}
+            <td>{{ row.get(name) }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if not analysis.preview_rows %}
+      <div class="muted">No preview rows to display.</div>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card" style="padding:16px">
+      <h3 style="margin:0 0 12px">SQL analysis</h3>
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge">{{ analysis.sql.query_kind }}</span>
+        <span class="badge">{{ analysis.sql.statement_count }} statements</span>
+        <span class="badge">{{ analysis.sql.token_count }} tokens</span>
+      </div>
+      <div class="muted">Keywords: {{ analysis.sql.keywords }}</div>
+    </div>
+    <div class="card" style="padding:16px">
+      <h3 style="margin:0 0 12px">VBA analysis</h3>
+      <div class="row" style="margin-bottom:10px">
+        <span class="badge">{{ analysis.vba.procedure_count }} procedures</span>
+        <span class="badge">{{ analysis.vba.comment_lines }} comment lines</span>
+        <span class="badge">{{ analysis.vba.complexity_score }} score</span>
+      </div>
+      <div class="muted">Top identifiers: {{ analysis.vba.top_identifiers }}</div>
+    </div>
+  </div>
+</div>
