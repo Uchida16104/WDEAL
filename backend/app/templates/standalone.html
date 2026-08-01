@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WDEAL</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@motionone/dom@10.18.0/dist/motion.js"></script>
+  <script src="https://unpkg.com/hyperscript.org@0.9.14"></script>
+  <script>
+    window.WDEAL_BOOT = {{ analysis_json | safe }};
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-family: Inter, system-ui, sans-serif; background: #020617; color: #e2e8f0; margin: 0; }
+    .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
+    .card { background: rgba(15, 23, 42, .82); border: 1px solid rgba(148,163,184,.18); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.24); }
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    textarea, select, input { width: 100%; box-sizing: border-box; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 14px; padding: 12px; }
+    textarea { min-height: 180px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    button { cursor: pointer; border: 0; border-radius: 12px; padding: 10px 14px; background: #2563eb; color: white; font-weight: 600; }
+    button.secondary { background: #334155; }
+    .row { display:flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .muted { color: #94a3b8; }
+    .pill { display:inline-flex; align-items:center; gap: 8px; border: 1px solid #334155; padding: 6px 10px; border-radius: 999px; background: #0f172a; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid rgba(148,163,184,.15); padding: 8px 10px; text-align: left; font-size: 14px; }
+    th { position: sticky; top: 0; background: #0f172a; }
+    .error { background: rgba(127,29,29,.42); border: 1px solid rgba(248,113,113,.4); padding: 12px 14px; border-radius: 14px; }
+    .badge { background: #1e293b; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+    .summary-grid { grid-template-columns: repeat(5, minmax(0,1fr)); }
+    .metric { padding: 16px; }
+    .metric h3 { margin: 0 0 4px; font-size: 13px; color: #94a3b8; }
+    .metric p { margin: 0; font-size: 28px; font-weight: 800; }
+    @media (max-width: 1100px) { .grid-2, .grid-3, .summary-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="row" style="justify-content:space-between;margin-bottom:16px">
+      <div>
+        <h1 style="margin:0;font-size:34px">WDEAL</h1>
+        <div class="muted">Web Data Editor, Analyzer and Learner</div>
+      </div>
+      <div class="row">
+        <span class="pill">HTMX</span>
+        <span class="pill">Alpine.js</span>
+        <span class="pill">Chart.js</span>
+        <span class="pill">Motion One</span>
+        <span class="pill">hyperscript</span>
+      </div>
+    </div>
+
+    <form id="wdeal-form"
+          class="grid grid-2"
+          hx-post="/api/analyze"
+          hx-trigger="load, input changed delay:450ms from:textarea, change from:select, change from:input[type='checkbox']"
+          hx-target="#analysis-panel"
+          hx-swap="innerHTML">
+      <div class="card" style="padding:16px">
+        <div class="row" style="justify-content:space-between">
+          <h2 style="margin:0">SQL / CSV / VBA</h2>
+          <div class="row">
+            <button type="button" class="secondary" onclick="document.getElementById('sql_text').value = '{{ default_sql|replace("\n", "\\n")|replace("'", "&#39;") }}'; document.getElementById('csv_text').value = `{{ default_csv|replace('`', '\\`') }}`; document.getElementById('vba_text').value = `{{ default_vba|replace('`', '\\`') }}`; htmx.trigger('#wdeal-form', 'input');">Load demo</button>
+            <button type="button" class="secondary" onclick="document.getElementById('sql_text').value=''; document.getElementById('csv_text').value=''; document.getElementById('vba_text').value=''; htmx.trigger('#wdeal-form', 'input');">Clear</button>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <label class="muted">SQL</label>
+          <textarea id="sql_text" name="sql_text">{{ default_sql }}</textarea>
+        </div>
+        <div style="margin-top:14px">
+          <label class="muted">CSV</label>
+          <textarea id="csv_text" name="csv_text">{{ default_csv }}</textarea>
+        </div>
+        <div style="margin-top:14px">
+          <label class="muted">VBA</label>
+          <textarea id="vba_text" name="vba_text">{{ default_vba }}</textarea>
+        </div>
+
+        <div class="grid grid-3" style="margin-top:14px">
+          <div>
+            <label class="muted">Chart mode</label>
+            <select name="chart_mode">
+              <option value="completeness">Completeness</option>
+              <option value="missing">Missing cells</option>
+              <option value="types">Column types</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted">Preview rows</label>
+            <input type="number" name="max_rows" value="25" min="1" max="200">
+          </div>
+          <div style="display:flex;align-items:end;gap:12px;padding-top:22px">
+            <label class="pill"><input type="checkbox" name="show_legend" checked> Legend</label>
+            <label class="pill"><input type="checkbox" name="show_grid" checked> Grid</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:16px">
+        <div class="row" style="justify-content:space-between">
+          <h2 style="margin:0">Analysis / Export</h2>
+          <div class="row">
+            <button type="button" onclick="window.wdealDownload('csv')">CSV</button>
+            <button type="button" onclick="window.wdealDownload('xlsx')">XLSX</button>
+            <button type="button" onclick="window.wdealDownload('xlsm')">XLSM</button>
+          </div>
+        </div>
+        <div id="analysis-panel" class="card" style="margin-top:14px;padding:16px">
+          <div class="muted">Loading analysis…</div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    window.wdealDownload = async function(kind) {
+      const form = document.getElementById('wdeal-form');
+      const data = new FormData(form);
+      const res = await fetch(`/api/export/${kind}`, { method: 'POST', body: data });
+      if (!res.ok) {
+        alert(`Export failed: ${res.status}`);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wdeal-export.${kind}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    function renderChart() {
+      const script = document.getElementById('wdeal-analysis-json');
+      const canvas = document.getElementById('wdeal-chart');
+      if (!script || !canvas || !window.Chart) return;
+      const payload = JSON.parse(script.textContent);
+      if (window.__wdealChart) {
+        window.__wdealChart.destroy();
+      }
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const chartCfg = payload.chart || {};
+      const data = {
+        labels: chartCfg.labels || [],
+        datasets: [{
+          label: chartCfg.dataset_label || 'Metric',
+          data: chartCfg.values || [],
+          borderWidth: 2,
+          tension: 0.35,
+        }]
+      };
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: !!chartCfg.show_legend },
+        },
+        scales: chartCfg.type === 'doughnut' ? {} : {
+          x: { grid: { display: !!chartCfg.show_grid } },
+          y: { grid: { display: !!chartCfg.show_grid }, beginAtZero: true },
+        }
+      };
+      window.__wdealChart = new Chart(ctx, { type: chartCfg.type || 'bar', data, options });
+    }
+
+    document.body.addEventListener('htmx:afterSwap', function(ev) {
+      if (ev.detail.target && ev.detail.target.id === 'analysis-panel') {
+        renderChart();
+        if (window.motion) {
+          try {
+            window.motion.animate('#analysis-panel', { opacity: [0, 1], y: [10, 0] }, { duration: 0.22 });
+          } catch (e) {}
+        }
+      }
+    });
+
+    document.body.addEventListener('DOMContentLoaded', renderChart);
+    window.addEventListener('load', function() {
+      setTimeout(renderChart, 50);
+    });
+  </script>
+</body>
+</html>
